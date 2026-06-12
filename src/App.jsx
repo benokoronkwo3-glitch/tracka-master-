@@ -55,6 +55,48 @@ const CLIENTS = {
       login:   "linear-gradient(135deg,#4c1d95,#7c3aed,#a78bfa)",
       logo:    "linear-gradient(135deg,#7c3aed,#a78bfa)",
     },
+  },// ── CLIENT: TRUST DIVINE ────────────────────────────────────────
+  trust_divine: {
+    id:       "trust_divine",
+    name:     "Trust Divine Nig Ltd",
+    address:  "C67 Tobacco Line 5, Main Market, Onitsha",
+    state:    "Anambra State",
+    owner:    "Dcn Paul Orji",
+    phone:    "08033081409",
+    logo:     "TD",
+    branches: ["Christ Church Warehouse", "Fegge Warehouse", "Main Market"],
+    expCats:  ["Rent","Utilities","Staff Salary","Logistics","Stock Purchase","Transport","Miscellaneous"],
+    theme: {
+      primary: "#16a34a",
+      dark:    "#14532d",
+      light:   "#f0fdf4",
+      mid:     "#dcfce7",
+      border:  "#bbf7d0",
+      login:   "linear-gradient(135deg,#14532d,#16a34a,#4ade80)",
+      logo:    "linear-gradient(135deg,#16a34a,#4ade80)",
+    },
+  },
+
+  // ── CLIENT: CWIN AGRO VENTURES ──────────────────────────────────
+  cwin_agro: {
+    id:       "cwin_agro",
+    name:     "Cwin Agro Ventures",
+    address:  "75 Limca Road, Obosi, Onitsha",
+    state:    "Anambra State",
+    owner:    "Godwin Chukwuma",
+    phone:    "08060598873",
+    logo:     "CA",
+    branches: ["Obosi Main", "Onitsha", "Nnewi"],
+    expCats:  ["Rent","Utilities","Staff Salary","Feed Purchase","Veterinary","Logistics","Transport","Miscellaneous"],
+    theme: {
+      primary: "#0369a1",
+      dark:    "#0c4a6e",
+      light:   "#f0f9ff",
+      mid:     "#e0f2fe",
+      border:  "#bae6fd",
+      login:   "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)",
+      logo:    "linear-gradient(135deg,#0369a1,#38bdf8)",
+    },
   },
   // ADD NEW CLIENT HERE — copy one block above, change details
 };
