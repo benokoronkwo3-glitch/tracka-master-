@@ -111,11 +111,11 @@ export default function App(){
     const p=new URLSearchParams(window.location.search);
     const fromUrl=p.get("client");
     if(fromUrl&&CLIENTS[fromUrl]){
-      localStorage.setItem("tracka_client",fromUrl);
+      sessionStorage.setItem("tracka_client",fromUrl);
       window.history.replaceState({},"",window.location.pathname);
       return fromUrl;
     }
-    return localStorage.getItem("tracka_client");
+    return sessionStorage.getItem("tracka_client");
   };
   const cid=getClient();
   const cl=CLIENTS[cid];
@@ -644,4 +644,4 @@ function UsersPage({users,branches,T,S,Btn,Tag,FL,FG,FC,TH,Grid,Modal,onAdd,onTo
     <Grid cols={["Name","Email","Role","Branch","PIN","Status","Actions"]}
       rows={users.map(u=>[<strong style={{color:u.active?T.dark:"#94a3b8"}}>{u.name}</strong>,<span style={{fontSize:12,color:"#374151"}}>{u.email}</span>,<Tag bg={RC[u.role]+"20"} tc={RC[u.role]}>{u.role}</Tag>,u.branch?<Tag>{u.branch}</Tag>:<span style={{color:"#a78bfa",fontSize:12}}>All Branches</span>,<code style={{background:T.mid,padding:"2px 8px",borderRadius:4,color:T.primary,fontSize:12}}>{u.pin}</code>,<Tag bg={u.active?T.mid:"#fef2f2"} tc={u.active?T.primary:"#ef4444"}>{u.active?"Active":"Disabled"}</Tag>,<div style={{display:"flex",gap:6}}>{u.role!=="owner"&&<button onClick={()=>onToggle(u.id)} style={{...S.pay,background:u.active?"#fef2f2":T.mid,color:u.active?"#ef4444":T.primary,border:`1px solid ${u.active?"#fca5a5":T.border}`}}><Ic name={u.active?"disable":"enable"} size={12}/>{u.active?"Disable":"Enable"}</button>}<button onClick={()=>{setPm(u);setNp("");}} style={S.pay}><Ic name="pin" size={12}/> PIN</button></div>])}/>
   </div>;
-    }
+}
