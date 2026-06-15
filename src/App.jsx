@@ -107,20 +107,16 @@ const IC={
 function Ic({name,size=18}){return<svg width={size}height={size}viewBox="0 0 24 24"fill="currentColor"style={{flexShrink:0}}><path d={IC[name]||""}/></svg>;}
 
 export default function App(){
-  const getClient=()=>{
-    const p=new URLSearchParams(window.location.search);
-    const fromUrl=p.get("client");
-    if(fromUrl&&CLIENTS[fromUrl]){
-      sessionStorage.setItem("tracka_client",fromUrl);
-      window.history.replaceState({},"",window.location.pathname);
-      return fromUrl;
-    }
-    return sessionStorage.getItem("tracka_client");
-  };
-  const cid=getClient();
-  const cl=CLIENTS[cid];
+  const p=new URLSearchParams(window.location.search);
+  const fromUrl=p.get("client");
+  if(fromUrl&&CLIENTS[fromUrl]){
+    localStorage.setItem("tracka_client",fromUrl);
+    window.history.replaceState({},"",window.location.pathname);
+  }
+  const clientKey=fromUrl||localStorage.getItem("tracka_client");
+  const client=CLIENTS[clientKey];
   const[user,setUser]=useState(null);
-  if(!cl)return(
+  if(!client)return(
     <div style={{minHeight:"100vh",background:"#0f172a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"sans-serif"}}>
       <div style={{textAlign:"center",color:"#fff"}}>
         <div style={{fontSize:48,marginBottom:16}}>🔒</div>
@@ -129,12 +125,12 @@ export default function App(){
       </div>
     </div>
   );
-  if(!user)return<LoginScreen cl={cl} onLogin={setUser}/>;
-  return<MainApp cl={cl} user={user} onLogout={()=>setUser(null)}/>;
+  if(!user)return<LoginScreen client={client} onLogin={setUser}/>;
+  return<MainApp client={client} user={user} onLogout={()=>setUser(null)}/>;
 }
 
-function LoginScreen({cl,onLogin}){
-  const T=cl.theme;
+function LoginScreen({client,onLogin}){
+  const T=client.theme;
   const[users,setUsers]=useState([]);
   const[email,setEmail]=useState("");
   const[pin,setPin]=useState("");
@@ -145,18 +141,18 @@ function LoginScreen({cl,onLogin}){
   useEffect(()=>{
     (async()=>{
       try{
-        const res=await db.get("users",cl.id,"order=name.asc");
+        const res=await db.get("users",client.id,"order=name.asc");
         if(res.error){setDbOk(false);setDbErr(res.error.message||JSON.stringify(res.error));setLoading(false);return;}
         setDbOk(true);
         const rows=Array.isArray(res.data)?res.data:[];
         if(rows.length===0){
-          const owner={id:genId(),client_id:cl.id,name:cl.owner,role:"owner",branch:null,pin:"0000",email:cl.id+"@tracka.ng",active:true};
+          const owner={id:genId(),client_id:client.id,name:client.owner,role:"owner",branch:null,pin:"0000",email:client.id+"@tracka.ng",active:true};
           await db.post("users",owner);setUsers([owner]);
         }else setUsers(rows);
       }catch(e){setDbOk(false);setDbErr(e.message);}
       setLoading(false);
     })();
-  },[cl.id]);
+  },[client.id]);
   const go=()=>{
     const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase().trim()&&x.pin===pin.trim());
     if(!u){setErr("Email or PIN incorrect.");return;}
@@ -168,11 +164,11 @@ function LoginScreen({cl,onLogin}){
   return(
     <div style={{minHeight:"100vh",background:T.login,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans','Segoe UI',sans-serif",padding:20}}>
       <div style={{background:"#fff",border:`1px solid ${T.border}`,borderRadius:20,padding:"40px 36px",width:"100%",maxWidth:400}}>
-        <div style={{width:56,height:56,borderRadius:16,background:T.logo,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:900,color:"#fff",margin:"0 auto 14px"}}>{cl.logo}</div>
+        <div style={{width:56,height:56,borderRadius:16,background:T.logo,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:900,color:"#fff",margin:"0 auto 14px"}}>{client.logo}</div>
         <div style={{textAlign:"center",fontWeight:900,fontSize:13,color:T.primary,marginBottom:2}}>TRACKA</div>
-        <div style={{textAlign:"center",fontWeight:800,fontSize:18,color:T.dark,marginBottom:4}}>{cl.name}</div>
-        <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:4}}>{cl.address}</div>
-        <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:20}}>{cl.state}</div>
+        <div style={{textAlign:"center",fontWeight:800,fontSize:18,color:T.dark,marginBottom:4}}>{client.name}</div>
+        <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:4}}>{client.address}</div>
+        <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:20}}>{client.state}</div>
         <div style={{height:1,background:T.border,marginBottom:20}}/>
         {dbOk===false&&<div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:8,padding:14,marginBottom:16,color:"#dc2626",fontSize:13}}><strong>⚠ Cannot connect to database</strong>{dbErr&&<div style={{fontSize:11,marginTop:4,opacity:.8,wordBreak:"break-all"}}>{dbErr}</div>}</div>}
         <label style={lbl}>Email Address</label>
@@ -181,14 +177,14 @@ function LoginScreen({cl,onLogin}){
         <input style={inp} type="password" maxLength={8} placeholder="Enter your PIN" value={pin} onChange={e=>setPin(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/>
         {err&&<div style={{color:"#dc2626",fontSize:13,marginTop:8}}>{err}</div>}
         <button style={{width:"100%",background:T.logo,border:"none",borderRadius:10,color:"#fff",padding:"13px",fontWeight:800,fontSize:15,cursor:"pointer",marginTop:16}} onClick={go} disabled={loading}>{loading?"Connecting…":"Enter Dashboard →"}</button>
-        <div style={{fontSize:11,color:T.primary,marginTop:14,textAlign:"center"}}>{cl.owner} · Change PIN after first login</div>
+        <div style={{fontSize:11,color:T.primary,marginTop:14,textAlign:"center"}}>{client.owner} · Change PIN after first login</div>
       </div>
     </div>
   );
 }
 
-function MainApp({cl,user,onLogout}){
-  const T=cl.theme,CID=cl.id;
+function MainApp({client,user,onLogout}){
+  const T=client.theme,CID=client.id;
   const[tab,setTab]=useState("dashboard");
   const[ab,setAb]=useState(null);
   const[dbOk,setDbOk]=useState(null);
@@ -201,8 +197,8 @@ function MainApp({cl,user,onLogout}){
   const[sales,setSales]=useState([]);
   const[expenses,setExpenses]=useState([]);
   const[credits,setCredits]=useState([]);
-  const[expCats,setExpCats]=useState(cl.expCats||["Rent","Utilities","Salary","Miscellaneous"]);
-  const[branches,setBranches]=useState(cl.branches||[]);
+  const[expCats,setExpCats]=useState(client.expCats||["Rent","Utilities","Salary","Miscellaneous"]);
+  const[branches,setBranches]=useState(client.branches||[]);
   const t2=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3500);};
   const ask=(msg,fn)=>setConfirm({msg,fn});
   const loadAll=useCallback(async()=>{
@@ -299,8 +295,8 @@ function MainApp({cl,user,onLogout}){
     <div style={{display:"flex",height:"100vh",background:T.light,color:T.dark,fontFamily:"'DM Sans','Segoe UI',sans-serif",overflow:"hidden"}}>
       <aside style={{width:232,background:"#fff",borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:9,padding:"16px 13px 14px",borderBottom:`1px solid ${T.border}`}}>
-          <div style={{width:38,height:38,borderRadius:10,background:T.logo,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>{cl.logo}</div>
-          <div style={{minWidth:0}}><div style={{fontWeight:800,fontSize:12,color:T.dark,lineHeight:1.3}}>{cl.name}</div><div style={{fontSize:10,color:T.primary,lineHeight:1.5}}>{cl.address}</div></div>
+          <div style={{width:38,height:38,borderRadius:10,background:T.logo,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>{client.logo}</div>
+          <div style={{minWidth:0}}><div style={{fontWeight:800,fontSize:12,color:T.dark,lineHeight:1.3}}>{client.name}</div><div style={{fontSize:10,color:T.primary,lineHeight:1.5}}>{client.address}</div></div>
         </div>
         {isOwner&&<div style={{padding:"10px 11px",borderBottom:`1px solid ${T.border}`}}><div style={{fontSize:10,color:"#374151",fontWeight:700,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Branch View</div><select style={{width:"100%",background:T.mid,border:`1px solid ${T.border}`,color:T.dark,borderRadius:7,padding:"7px 8px",fontSize:12,fontWeight:700,cursor:"pointer"}} value={ab||""} onChange={e=>{setAb(e.target.value||null);setTab("dashboard");}}><option value="">📊 All Branches</option>{branches.map(b=><option key={b} value={b}>📍 {b}</option>)}</select></div>}
         <nav style={{flex:1,padding:"10px 7px",display:"flex",flexDirection:"column",gap:2,overflowY:"auto"}}>
@@ -315,13 +311,12 @@ function MainApp({cl,user,onLogout}){
       </aside>
       <main style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 20px",borderBottom:`1px solid ${T.border}`,flexShrink:0,background:"#fff"}}>
-          <div><div style={{fontSize:18,fontWeight:800,color:T.dark}}>{tab==="dashboard"?`Good day, ${user?.name?.split(" ")[0]} 👋`:nav.find(n=>n.id===tab)?.label}</div><div style={{fontSize:11,color:T.primary,marginTop:2}}>{cl.name} · {isOwner?(ab?"📍 "+ab:"📊 All Branches"):"📍 "+user?.branch} · {new Date().toLocaleDateString("en-NG",{weekday:"short",year:"numeric",month:"short",day:"numeric"})}</div></div>
+          <div><div style={{fontSize:18,fontWeight:800,color:T.dark}}>{tab==="dashboard"?`Good day, ${user?.name?.split(" ")[0]} 👋`:nav.find(n=>n.id===tab)?.label}</div><div style={{fontSize:11,color:T.primary,marginTop:2}}>{client.name} · {isOwner?(ab?"📍 "+ab:"📊 All Branches"):"📍 "+user?.branch} · {new Date().toLocaleDateString("en-NG",{weekday:"short",year:"numeric",month:"short",day:"numeric"})}</div></div>
           <div style={{textAlign:"right",fontSize:11,color:"#374151",lineHeight:1.7}}>
-            <div style={{fontWeight:700,color:T.primary}}>{cl.owner}</div>
-            <div>{cl.phone} · {cl.state}</div>
+            <div style={{fontWeight:700,color:T.primary}}>{client.owner}</div>
+            <div>{client.phone} · {client.state}</div>
             {isOwner&&<button onClick={()=>{
-              const now=new Date();
-              const fmt2=n=>"₦"+Number(n||0).toLocaleString("en-NG");
+              const now=new Date();const fmt2=n=>"₦"+Number(n||0).toLocaleString("en-NG");
               const todayS=sales.filter(s=>new Date(s.date).toDateString()===now.toDateString());
               const weekS=sales.filter(s=>{const d=new Date(s.date);const w=new Date(now);w.setDate(now.getDate()-7);return d>=w;});
               const monthS=sales.filter(s=>{const d=new Date(s.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
@@ -331,7 +326,7 @@ function MainApp({cl,user,onLogout}){
               const monthE=expenses.filter(e=>{const d=new Date(e.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
               const yearE=expenses.filter(e=>new Date(e.date).getFullYear()===now.getFullYear());
               const row=(sArr,eArr)=>{const tS=sArr.reduce((s,r)=>s+ +r.amount,0);const tE=eArr.reduce((s,r)=>s+ +r.amount,0);return`<td class="g">${fmt2(tS)}</td><td class="r">${fmt2(tE)}</td><td class="${tS-tE>=0?"g":"r"}">${fmt2(tS-tE)}</td>`;};
-              const html=`<html><head><title>${cl.name} — Dashboard Summary</title><style>body{font-family:sans-serif;padding:24px}h1{font-size:18px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#f5f5f5;padding:8px 12px;text-align:left;font-size:11px;border:1px solid #ddd;text-transform:uppercase}td{padding:8px 12px;border:1px solid #ddd;font-size:13px}.g{color:#16a34a;font-weight:700}.r{color:#dc2626;font-weight:700}</style></head><body><h1>${cl.name}</h1><p style="color:#555;font-size:12px">${cl.address} · ${cl.phone}<br/>Printed: ${now.toLocaleString("en-NG")}</p><hr/><table><thead><tr><th>Period</th><th>Sales</th><th>Expenses</th><th>Net Profit</th></tr></thead><tbody><tr><td><strong>Today</strong></td>${row(todayS,todayE)}</tr><tr><td><strong>This Week</strong></td>${row(weekS,weekE)}</tr><tr><td><strong>This Month</strong></td>${row(monthS,monthE)}</tr><tr><td><strong>This Year</strong></td>${row(yearS,yearE)}</tr></tbody></table><h2 style="margin-top:24px;font-size:13px">All Branches</h2><table><thead><tr><th>Branch</th><th>Sales</th><th>Expenses</th><th>Profit</th></tr></thead><tbody>${branches.map(b=>{const bS=sales.filter(s=>s.branch===b).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b).reduce((t,r)=>t+ +r.amount,0);return`<tr><td>📍 ${b}</td><td class="g">${fmt2(bS)}</td><td class="r">${fmt2(bE)}</td><td class="${bS-bE>=0?"g":"r"}">${fmt2(bS-bE)}</td></tr>`;}).join("")}</tbody></table></body></html>`;
+              const html=`<html><head><title>${client.name} — Dashboard Summary</title><style>body{font-family:sans-serif;padding:24px}h1{font-size:18px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#f5f5f5;padding:8px 12px;text-align:left;font-size:11px;border:1px solid #ddd;text-transform:uppercase}td{padding:8px 12px;border:1px solid #ddd;font-size:13px}.g{color:#16a34a;font-weight:700}.r{color:#dc2626;font-weight:700}</style></head><body><h1>${client.name}</h1><p style="color:#555;font-size:12px">${client.address} · ${client.phone}<br/>Printed: ${now.toLocaleString("en-NG")}</p><hr/><table><thead><tr><th>Period</th><th>Sales</th><th>Expenses</th><th>Net Profit</th></tr></thead><tbody><tr><td><strong>Today</strong></td>${row(todayS,todayE)}</tr><tr><td><strong>This Week</strong></td>${row(weekS,weekE)}</tr><tr><td><strong>This Month</strong></td>${row(monthS,monthE)}</tr><tr><td><strong>This Year</strong></td>${row(yearS,yearE)}</tr></tbody></table><h2 style="margin-top:24px;font-size:13px">All Branches</h2><table><thead><tr><th>Branch</th><th>Sales</th><th>Expenses</th><th>Profit</th></tr></thead><tbody>${branches.map(b=>{const bS=sales.filter(s=>s.branch===b).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b).reduce((t,r)=>t+ +r.amount,0);return`<tr><td>📍 ${b}</td><td class="g">${fmt2(bS)}</td><td class="r">${fmt2(bE)}</td><td class="${bS-bE>=0?"g":"r"}">${fmt2(bS-bE)}</td></tr>`;}).join("")}</tbody></table></body></html>`;
               const w=window.open("","_blank");w.document.write(html);w.document.close();w.print();
             }} style={{marginTop:6,background:T.logo,border:"none",borderRadius:6,color:"#fff",padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🖨 Print Summary</button>}
           </div>
@@ -351,7 +346,7 @@ function MainApp({cl,user,onLogout}){
           {tab==="expenses"&&P.exp&&<ExpPage data={fE} expCats={expCats} myBranch={myBranch} myBranches={myBranches} P={P} T={T} S={S} Btn={Btn} Del={Del} Tag={Tag} FL={FL} FG={FG} FC={FC} TH={TH} Grid={Grid} onAdd={doAddExp} onAddCat={doAddCat} onDelete={id=>ask("Delete expense?",()=>doDel("expense",id))} showToast={t2}/>}
           {tab==="stock"&&<StockPage data={fSt} products={products} myBranch={myBranch} myBranches={myBranches} P={P} T={T} S={S} Btn={Btn} Tag={Tag} FL={FL} FG={FG} FC={FC} TH={TH} Grid={Grid} onRestock={doRestock} onAddProd={doAddProd} showToast={t2}/>}
           {tab==="credit"&&<CreditPage data={fC} myBranch={myBranch} myBranches={myBranches} P={P} T={T} S={S} Btn={Btn} Del={Del} Tag={Tag} FL={FL} FG={FG} FC={FC} TH={TH} Grid={Grid} Modal={Modal} onPayment={doPay} onAdd={doAddCred} onDelete={id=>ask("Delete credit?",()=>doDel("credit",id))} showToast={t2}/>}
-          {tab==="reports"&&<ReportsPage sales={sales} expenses={expenses} credits={credits} branches={branches} client={cl} ab={ab} isOwner={isOwner} P={P} user={user} myBranch={myBranch} myBranches={myBranches} T={T} S={S} Btn={Btn} Tag={Tag} TH={TH} Grid={Grid} KV={KV}/>}
+          {tab==="reports"&&<ReportsPage sales={sales} expenses={expenses} credits={credits} branches={branches} client={client} ab={ab} isOwner={isOwner} P={P} user={user} myBranch={myBranch} myBranches={myBranches} T={T} S={S} Btn={Btn} Tag={Tag} TH={TH} Grid={Grid} KV={KV}/>}
           {tab==="branches"&&isOwner&&<BranchPage sales={sales} expenses={expenses} stock={stock} credits={credits} branches={branches} T={T} S={S} Btn={Btn} TH={TH} KV={KV} onAdd={n=>{if(!branches.includes(n)){setBranches(p=>[...p,n]);t2("Branch added ✓");}}} onSwitch={b=>{setAb(b);setTab("dashboard");}} showToast={t2}/>}
           {tab==="users"&&isOwner&&<UsersPage users={users} branches={branches} T={T} S={S} Btn={Btn} Tag={Tag} FL={FL} FG={FG} FC={FC} TH={TH} Grid={Grid} Modal={Modal} onAdd={doAddUser} onToggle={id=>ask("Toggle user?",()=>doToggle(id))} onPin={doPin} showToast={t2}/>}
         </div>
@@ -399,7 +394,7 @@ function ExpPage({data,expCats,myBranch,myBranches,P,T,S,Btn,Del,Tag,FL,FG,FC,TH
   const F=(k,v)=>setForm(f=>({...f,[k]:v}));
   return<div>
     <TH title="Expenses" sub={fmt(data.reduce((s,r)=>s+ +r.amount,0))+" total"} sc="#ef4444"><div style={{display:"flex",gap:8}}><Btn ghost onClick={()=>setCo(v=>!v)}>+ Category</Btn><Btn onClick={()=>setOpen(v=>!v)}><Ic name={open?"close":"add"} size={16}/>{open?"Cancel":"Add Expense"}</Btn></div></TH>
-    {co&&<FC title="➕ New Expense Category"><div style={{display:"flex",gap:10}}><input style={{...S.inp,flex:1}} placeholder="e.g. Packaging, Cleaning…" value={nc} onChange={e=>setNc(e.target.value)}/><button style={S.save} onClick={()=>{onAddCat(nc);setNc("");setCo(false);}}>Add</button></div><div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:7}}>{expCats.map(c=><span key={c} style={{background:T.mid,border:`1px solid ${T.border}`,borderRadius:99,padding:"4px 12px",fontSize:12,color:T.primary}}>{c}</span>)}</div></FC>}
+    {co&&<FC title="➕ New Expense Category"><div style={{display:"flex",gap:10}}><input style={{...S.inp,flex:1}} placeholder="e.g. Packaging…" value={nc} onChange={e=>setNc(e.target.value)}/><button style={S.save} onClick={()=>{onAddCat(nc);setNc("");setCo(false);}}>Add</button></div><div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:7}}>{expCats.map(c=><span key={c} style={{background:T.mid,border:`1px solid ${T.border}`,borderRadius:99,padding:"4px 12px",fontSize:12,color:T.primary}}>{c}</span>)}</div></FC>}
     {open&&<FC title="💸 Record Expense"><FG>
       {myBranches.length>1&&<FL l="Branch"><select style={S.inp} value={form.branch} onChange={e=>F("branch",e.target.value)}>{myBranches.map(b=><option key={b}>{b}</option>)}</select></FL>}
       <FL l="Category *"><select style={S.inp} value={form.category} onChange={e=>F("category",e.target.value)}>{expCats.map(c=><option key={c}>{c}</option>)}</select></FL>
@@ -422,12 +417,12 @@ function StockPage({data,products,myBranch,myBranches,P,T,S,Btn,Tag,FL,FG,FC,TH,
   return<div>
     <TH title="Stock / Inventory">{P.stk&&<div style={{display:"flex",gap:8}}><Btn ghost onClick={()=>{setOP(v=>!v);setOR(false);}}><Ic name="stock" size={15}/> New Product</Btn><Btn onClick={()=>{setOR(v=>!v);setOP(false);}}><Ic name="add" size={15}/> Restock</Btn></div>}</TH>
     {oP&&<FC title="🆕 Add New Product to Catalogue"><FG>
-      <FL l="Product Name *"><input style={S.inp} placeholder="e.g. Jeans, Shirts" value={pf.name} onChange={e=>FP("name",e.target.value)}/></FL>
-      <FL l="Unit"><input style={S.inp} placeholder="pcs / yards / bags" value={pf.unit} onChange={e=>FP("unit",e.target.value)}/></FL>
+      <FL l="Product Name *"><input style={S.inp} placeholder="e.g. Ankara Fabric" value={pf.name} onChange={e=>FP("name",e.target.value)}/></FL>
+      <FL l="Unit"><input style={S.inp} placeholder="yards / bags / pcs" value={pf.unit} onChange={e=>FP("unit",e.target.value)}/></FL>
       <FL l="Sell Price (₦)"><input style={S.inp} type="number" value={pf.price} onChange={e=>FP("price",e.target.value)}/></FL>
       {myBranches.length>1&&<FL l="Branch"><select style={S.inp} value={pf.branch} onChange={e=>FP("branch",e.target.value)}>{myBranches.map(b=><option key={b}>{b}</option>)}</select></FL>}
     </FG><button style={{...S.save,marginTop:16}} onClick={()=>{if(!pf.name){showToast("Enter product name","error");return;}onAddProd({name:pf.name,unit:pf.unit,price:+pf.price||0,branch:pf.branch});setPf({name:"",unit:"pcs",price:"",branch:myBranch||myBranches[0]||""});setOP(false);}}>Add to Catalogue</button></FC>}
-    {oR&&<FC title="📥 Restock — updates existing qty or adds new"><FG>
+    {oR&&<FC title="📥 Restock"><FG>
       {myBranches.length>1&&<FL l="Branch"><select style={S.inp} value={form.branch} onChange={e=>{F("branch",e.target.value);F("productId","");}}>{myBranches.map(b=><option key={b}>{b}</option>)}</select></FL>}
       <FL l="Product *"><select style={S.inp} value={form.productId} onChange={e=>{F("productId",e.target.value);const f=data.find(s=>s.productId===e.target.value&&s.branch===form.branch);if(f){F("costPrice",f.costPrice);F("sellPrice",f.sellPrice);F("reorder",f.reorder);}}}><option value="">— select product —</option>{bp.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></FL>
       <FL l="Qty to Add *"><input style={S.inp} type="number" min="1" value={form.qty} onChange={e=>F("qty",e.target.value)}/></FL>
@@ -464,138 +459,6 @@ function CreditPage({data,myBranch,myBranches,P,T,S,Btn,Del,Tag,FL,FG,FC,TH,Grid
     </Modal>}
     <Grid cols={["Customer","Phone","Total","Paid","Balance","Due","Branch","Status","Pay",...(P.del?["Del"]:[])]}
       rows={data.map(c=>{const bal=+c.amount-+(c.paid||0);const sc=c.status==="Paid"?T.primary:c.status==="Overdue"?"#ef4444":"#f59e0b";return[<strong style={{color:T.dark}}>{c.customer}</strong>,<a href={`tel:${c.phone}`} style={{color:T.primary,textDecoration:"none"}}>{c.phone}</a>,fmt(c.amount),<span style={{color:T.primary}}>{fmt(c.paid||0)}</span>,<strong style={{color:bal>0?"#f59e0b":T.primary}}>{fmt(bal)}</strong>,c.due,<Tag>{c.branch}</Tag>,<Tag bg={sc+"20"} tc={sc}>{c.status}</Tag>,bal>0?<button onClick={()=>setModal(c)} style={S.pay}><Ic name="credit" size={12}/> Pay</button>:<span style={{fontSize:11,color:T.primary}}>✓ Cleared</span>,...(P.del?[<Del onClick={()=>onDelete(c.id)}/>]:[])]})}/>
-  </div>;
-}
-
-function ReportsPage({sales,expenses,credits,branches,client,ab,isOwner,P,user,myBranch,myBranches,T,S,Btn,Tag,TH,Grid,KV}){
-  const[period,setPeriod]=useState("today");
-  const[branch,setBranch]=useState(isOwner?(ab||"all"):(myBranch||"all"));
-  const[showWA,setShowWA]=useState(null);
-  const[waData,setWaData]=useState({customer:"",phone:"",amount:"",item:""});
-  const[searchSale,setSearchSale]=useState("");
-  const[searchExp,setSearchExp]=useState("");
-  const[customFrom,setCustomFrom]=useState("");
-  const[customTo,setCustomTo]=useState("");
-  const[activeSearch,setActiveSearch]=useState("sales");
-  const now=new Date();
-  const inPeriod=dateStr=>{
-    if(!dateStr)return false;
-    const d=new Date(dateStr);
-    if(period==="today")return d.toDateString()===now.toDateString();
-    if(period==="week"){const w=new Date(now);w.setDate(now.getDate()-7);return d>=w;}
-    if(period==="month")return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
-    if(period==="year")return d.getFullYear()===now.getFullYear();
-    if(period==="custom"&&customFrom&&customTo){const f=new Date(customFrom),t=new Date(customTo);t.setHours(23,59,59);return d>=f&&d<=t;}
-    return true;
-  };
-  const myBr=isOwner?branch:(myBranch||"all");
-  const fBr=arr=>myBr==="all"?arr:arr.filter(r=>r.branch===myBr);
-  const fS=fBr(sales).filter(s=>inPeriod(s.date));
-  const fE=fBr(expenses).filter(e=>inPeriod(e.date));
-  const fC=fBr(credits);
-  const tS=fS.reduce((s,r)=>s+ +r.amount,0);
-  const tE=fE.reduce((s,r)=>s+ +r.amount,0);
-  const tC=fC.reduce((s,r)=>s+(+r.amount-+(r.paid||0)),0);
-  const overdue=fC.filter(c=>(+c.amount-+(c.paid||0))>0&&c.status==="Overdue");
-  const fsSales=fS.filter(s=>!searchSale||s.productName?.toLowerCase().includes(searchSale.toLowerCase())||s.customer?.toLowerCase().includes(searchSale.toLowerCase())||s.branch?.toLowerCase().includes(searchSale.toLowerCase())||s.payType?.toLowerCase().includes(searchSale.toLowerCase()));
-  const fsExp=fE.filter(e=>!searchExp||e.desc?.toLowerCase().includes(searchExp.toLowerCase())||e.category?.toLowerCase().includes(searchExp.toLowerCase())||e.branch?.toLowerCase().includes(searchExp.toLowerCase()));
-  const prodT={};fS.forEach(s=>{if(!prodT[s.productName])prodT[s.productName]={qty:0,amount:0};prodT[s.productName].qty+= +s.qty;prodT[s.productName].amount+= +s.amount;});
-  const topProds=Object.entries(prodT).sort((a,b)=>b[1].amount-a[1].amount).slice(0,5);
-  const catT={};fE.forEach(e=>{catT[e.category]=(catT[e.category]||0)+ +e.amount;});
-  const pLabel=period==="today"?"Today":period==="week"?"This Week":period==="month"?"This Month":period==="year"?"This Year":period==="custom"&&customFrom&&customTo?customFrom+" to "+customTo:"All Time";
-  const exportCSV=type=>{
-    let rows,headers;
-    if(type==="sales"){headers=["Product","Customer","Qty","Unit Price","Amount","Payment","Branch","Date"];rows=fS.map(s=>[s.productName,s.customer||"Walk-in",s.qty,s.unitPrice,s.amount,s.payType||"Cash",s.branch,s.date]);}
-    else{headers=["Description","Category","Amount","Branch","Date"];rows=fE.map(e=>[e.desc,e.category,e.amount,e.branch,e.date]);}
-    const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
-    const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");a.href=url;a.download=`tracka_${type}_${pLabel.replace(/ /g,"_")}.csv`;a.click();URL.revokeObjectURL(url);
-  };
-  const doPrint=()=>{
-    const fmt2=n=>"₦"+Number(n||0).toLocaleString("en-NG");
-    const html=`<html><head><title>${client.name} — ${pLabel}</title><style>body{font-family:sans-serif;padding:20px;font-size:13px}h1{font-size:18px;margin-bottom:4px}h2{font-size:13px;color:#555;margin:18px 0 6px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f5f5f5;text-align:left;padding:7px 10px;font-size:11px;border:1px solid #ddd}td{padding:7px 10px;border:1px solid #ddd}.g{color:#16a34a;font-weight:700}.r{color:#dc2626;font-weight:700}.o{color:#f59e0b;font-weight:700}</style></head><body>
-    <h1>${client.name}</h1><p style="color:#555;font-size:12px">${client.address} · ${client.phone}<br/>Period: ${pLabel} · Branch: ${myBr==="all"?"All Branches":myBr}<br/>Printed: ${new Date().toLocaleString("en-NG")}</p><hr/>
-    <div style="display:flex;gap:20px;margin:12px 0">${[["Total Sales",fmt2(tS),"g"],["Total Expenses",fmt2(tE),"r"],["Net Profit",fmt2(tS-tE),tS-tE>=0?"g":"r"],["Credit Owed",fmt2(tC),"o"]].map(([l,v,c])=>`<div style="border:1px solid #ddd;border-radius:6px;padding:10px 16px;min-width:120px"><div style="font-size:11px;color:#555">${l}</div><div class="${c}" style="font-size:16px">${v}</div></div>`).join("")}</div>
-    ${topProds.length>0?`<h2>Top Products</h2><table><thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead><tbody>${topProds.map(([n,d])=>`<tr><td>${n}</td><td>${d.qty}</td><td class="g">${fmt2(d.amount)}</td></tr>`).join("")}</tbody></table>`:""}
-    ${Object.keys(catT).length>0?`<h2>Expenses by Category</h2><table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>${Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([c,a])=>`<tr><td>${c}</td><td class="r">${fmt2(a)}</td></tr>`).join("")}</tbody></table>`:""}
-    ${isOwner&&myBr==="all"&&branches.length>1?`<h2>Branch Performance</h2><table><thead><tr><th>Branch</th><th>Sales</th><th>Expenses</th><th>Profit</th></tr></thead><tbody>${branches.map(b=>{const bS=sales.filter(s=>s.branch===b&&inPeriod(s.date)).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b&&inPeriod(e.date)).reduce((t,r)=>t+ +r.amount,0);return`<tr><td>📍 ${b}</td><td class="g">${fmt2(bS)}</td><td class="r">${fmt2(bE)}</td><td class="${bS-bE>=0?"g":"r"}">${fmt2(bS-bE)}</td></tr>`;}).join("")}</tbody></table>`:""}
-    <h2>Sales Records (${fS.length})</h2><table><thead><tr><th>Product</th><th>Customer</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Payment</th><th>Branch</th><th>Date</th></tr></thead><tbody>${fS.map(s=>`<tr><td>${s.productName}</td><td>${s.customer||"Walk-in"}</td><td>${s.qty}</td><td>${fmt2(s.unitPrice)}</td><td class="g">${fmt2(s.amount)}</td><td>${s.payType||"Cash"}</td><td>${s.branch}</td><td>${s.date}</td></tr>`).join("")}</tbody></table>
-    <h2>Expense Records (${fE.length})</h2><table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Branch</th><th>Date</th></tr></thead><tbody>${fE.map(e=>`<tr><td>${e.desc}</td><td>${e.category}</td><td class="r">${fmt2(e.amount)}</td><td>${e.branch}</td><td>${e.date}</td></tr>`).join("")}</tbody></table>
-    </body></html>`;
-    const w=window.open("","_blank");w.document.write(html);w.document.close();w.print();
-  };
-  const waReceipt=()=>{const msg=`🧾 *PAYMENT RECEIPT*\n━━━━━━━━━━━━━━━━━━━\n🏢 *${client.name}*\n📍 ${client.address}\n\n👤 Customer: *${waData.customer}*\n🛍 Item: ${waData.item}\n💰 Amount Paid: *${fmt(+waData.amount)}*\n📅 Date: ${new Date().toLocaleDateString("en-NG",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}\n\n✅ *Payment received. Thank you!*\n\n📞 ${client.phone}\n_Powered by Tracka_`;return`https://wa.me/${waData.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;};
-  const waThankYou=()=>{const msg=`🙏 *THANK YOU!*\n━━━━━━━━━━━━━━━━━━━\nDear *${waData.customer}*,\n\nThank you for your patronage at *${client.name}*!\n\nWe appreciate your business and look forward to serving you again.\n\n📞 ${client.phone}\n🌟 Your satisfaction is our priority!\n_${client.name}_`;return`https://wa.me/${waData.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;};
-  const waReminder=cr=>{const bal=+cr.amount-+(cr.paid||0);const msg=`⚠️ *PAYMENT REMINDER*\n━━━━━━━━━━━━━━━━━━━\nDear *${cr.customer}*,\n\nFriendly reminder from *${client.name}*.\n\n💳 Outstanding Balance: *${fmt(bal)}*\n📅 Due Date: ${cr.due}\n📊 Status: ${cr.status}\n\nKindly arrange payment at your earliest convenience.\n\nThank you!\n📞 ${client.phone}\n_${client.name}_`;return`https://wa.me/${cr.phone.replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`;};
-  const ps=a=>({background:a?T.primary:T.light,color:a?"#fff":T.primary,border:`1px solid ${T.border}`,borderRadius:99,padding:"6px 14px",fontSize:12,cursor:"pointer",fontWeight:700});
-  const card={background:"#fff",border:`1px solid ${T.border}`,borderRadius:11,padding:16,marginBottom:16};
-  return<div>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
-      <div><div style={{fontWeight:800,fontSize:18,color:T.dark}}>Reports & Tools</div><div style={{fontSize:13,color:"#374151",fontWeight:700}}>{pLabel} · {myBr==="all"?"All Branches":myBr}</div></div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <button onClick={()=>exportCSV("sales")} style={{...S.gBtn,fontSize:12,padding:"7px 12px"}}>⬇ CSV Sales</button>
-        <button onClick={()=>exportCSV("expenses")} style={{...S.gBtn,fontSize:12,padding:"7px 12px"}}>⬇ CSV Expenses</button>
-        <button onClick={doPrint} style={{...S.btn,fontSize:12,padding:"7px 12px"}}>🖨 Print Report</button>
-      </div>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-      <span style={{fontSize:12,color:"#374151",fontWeight:700}}>Period:</span>
-      {[["today","Today"],["week","This Week"],["month","This Month"],["year","This Year"],["all","All Time"],["custom","Custom Range"]].map(([v,l])=><button key={v} onClick={()=>setPeriod(v)} style={ps(period===v)}>{l}</button>)}
-    </div>
-    {period==="custom"&&<div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"flex-end"}}>
-      <div><label style={S.lbl}>From</label><input style={{...S.inp,width:160}} type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}/></div>
-      <div><label style={S.lbl}>To</label><input style={{...S.inp,width:160}} type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}/></div>
-    </div>}
-    {isOwner&&<div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
-      <span style={{fontSize:12,color:"#374151",fontWeight:700}}>Branch:</span>
-      <select style={{...S.inp,width:"auto",padding:"6px 10px"}} value={branch} onChange={e=>setBranch(e.target.value)}>
-        <option value="all">All Branches</option>{branches.map(b=><option key={b} value={b}>{b}</option>)}
-      </select>
-    </div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12,marginBottom:18}}>
-      {[{label:"Total Sales",value:fmt(tS),color:T.primary},{label:"Total Expenses",value:fmt(tE),color:"#ef4444"},{label:"Net Profit",value:fmt(tS-tE),color:tS-tE>=0?T.primary:"#ef4444"},{label:"Credit Owed",value:fmt(tC),color:"#f59e0b"}].map(k=><div key={k.label} style={{background:"#fff",border:`1px solid ${T.border}`,borderRadius:11,padding:16,borderLeft:`4px solid ${k.color}`}}><div style={{fontSize:11,color:"#374151",marginBottom:4}}>{k.label}</div><div style={{fontSize:18,fontWeight:800,color:k.color}}>{k.value}</div></div>)}
-    </div>
-    {topProds.length>0&&<div style={card}><div style={{fontWeight:800,color:T.primary,fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>🏆 Top Selling Products</div><Grid cols={["Product","Qty Sold","Revenue"]} rows={topProds.map(([n,d])=>[<strong style={{color:T.dark}}>{n}</strong>,d.qty,<strong style={{color:T.primary}}>{fmt(d.amount)}</strong>])}/></div>}
-    {Object.keys(catT).length>0&&<div style={card}><div style={{fontWeight:800,color:"#ef4444",fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>💸 Expenses by Category</div><Grid cols={["Category","Amount"]} rows={Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([c,a])=>[c,<strong style={{color:"#ef4444"}}>{fmt(a)}</strong>])}/></div>}
-    {isOwner&&myBr==="all"&&branches.length>1&&<div style={card}><div style={{fontWeight:800,color:T.primary,fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>📍 Branch Performance</div><Grid cols={["Branch","Sales","Expenses","Profit"]} rows={branches.map(b=>{const bS=sales.filter(s=>s.branch===b&&inPeriod(s.date)).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b&&inPeriod(e.date)).reduce((t,r)=>t+ +r.amount,0);return[<strong style={{color:T.dark}}>📍 {b}</strong>,<span style={{color:T.primary}}>{fmt(bS)}</span>,<span style={{color:"#ef4444"}}>{fmt(bE)}</span>,<strong style={{color:bS-bE>=0?T.primary:"#ef4444"}}>{fmt(bS-bE)}</strong>];})}/></div>}
-    <div style={{...card,border:"1px solid #25d36640"}}>
-      <div style={{fontWeight:800,color:"#25d366",fontSize:14,marginBottom:16}}>📱 WhatsApp Tools — Available to all staff</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:16}}>
-        {[{key:"receipt",label:"🧾 Send Receipt",color:"#16a34a",desc:"Send payment receipt to customer"},{key:"thankyou",label:"🙏 Thank You Message",color:"#0369a1",desc:"Appreciate a customer after purchase"}].map(btn=><button key={btn.key} onClick={()=>{setShowWA(btn.key);setWaData({customer:"",phone:"",amount:"",item:""}); }} style={{background:btn.color+"15",border:`1px solid ${btn.color}40`,borderRadius:10,padding:14,cursor:"pointer",textAlign:"left"}}><div style={{fontWeight:800,color:btn.color,marginBottom:4}}>{btn.label}</div><div style={{fontSize:11,color:"#374151"}}>{btn.desc}</div></button>)}
-      </div>
-      {(showWA==="receipt"||showWA==="thankyou")&&<div style={{background:T.light,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:16}}>
-        <div style={{fontWeight:700,color:T.primary,marginBottom:12,fontSize:12,textTransform:"uppercase"}}>{showWA==="receipt"?"🧾 Generate Receipt":"🙏 Generate Thank You"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:12}}>
-          <div><label style={S.lbl}>Customer Name *</label><input style={S.inp} placeholder="e.g. Mama Ngozi" value={waData.customer} onChange={e=>setWaData(p=>({...p,customer:e.target.value}))}/></div>
-          <div><label style={S.lbl}>Phone *</label><input style={S.inp} placeholder="08012345678" value={waData.phone} onChange={e=>setWaData(p=>({...p,phone:e.target.value}))}/></div>
-          {showWA==="receipt"&&<><div><label style={S.lbl}>Item / Service</label><input style={S.inp} placeholder="e.g. 2 Jeans Trousers" value={waData.item} onChange={e=>setWaData(p=>({...p,item:e.target.value}))}/></div><div><label style={S.lbl}>Amount Paid (₦)</label><input style={S.inp} type="number" value={waData.amount} onChange={e=>setWaData(p=>({...p,amount:e.target.value}))}/></div></>}
-        </div>
-        <div style={{display:"flex",gap:10,marginTop:14}}>
-          <button onClick={()=>setShowWA(null)} style={{...S.canc,flex:"none",padding:"9px 16px"}}>Cancel</button>
-          <a href={showWA==="receipt"?waReceipt():waThankYou()} target="_blank" rel="noreferrer" style={{flex:1,background:"#25d366",border:"none",borderRadius:7,color:"#fff",padding:"10px",fontWeight:800,fontSize:14,cursor:"pointer",textAlign:"center",textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Ic name="wa" size={18}/> Open WhatsApp & Send</a>
-        </div>
-      </div>}
-      {overdue.length>0&&<div><div style={{fontWeight:800,color:"#ef4444",fontSize:13,marginBottom:12}}>⚠️ Overdue Credit Reminders — tap Send to open WhatsApp</div><div style={{display:"flex",flexDirection:"column",gap:8}}>{overdue.map(cr=>{const bal=+cr.amount-+(cr.paid||0);return<div key={cr.id} style={{background:"#fff",border:"1px solid #fca5a5",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}><div><div style={{fontWeight:700,color:"#7f1d1d"}}>{cr.customer}</div><div style={{fontSize:12,color:"#374151"}}>{cr.phone} · {cr.branch} · Due: {cr.due}</div><div style={{fontSize:13,fontWeight:700,color:"#ef4444"}}>Balance: {fmt(bal)}</div></div><a href={waReminder(cr)} target="_blank" rel="noreferrer" style={{background:"#25d366",border:"none",borderRadius:8,color:"#fff",padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",textDecoration:"none",display:"flex",alignItems:"center",gap:6}}><Ic name="wa" size={16}/> Send Reminder</a></div>;})}</div></div>}
-      {overdue.length===0&&<div style={{fontSize:13,color:"#16a34a",fontWeight:600,padding:"8px 0"}}>✅ No overdue credits — all clear!</div>}
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:14}}>
-      <button onClick={()=>setActiveSearch("sales")} style={ps(activeSearch==="sales")}>🔍 Search Sales</button>
-      <button onClick={()=>setActiveSearch("expenses")} style={ps(activeSearch==="expenses")}>🔍 Search Expenses</button>
-    </div>
-    {activeSearch==="sales"&&<div style={card}>
-      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
-        <div style={{fontWeight:800,color:T.primary,fontSize:13,textTransform:"uppercase",letterSpacing:.5,flex:1}}>Sales ({fsSales.length}) · {fmt(fsSales.reduce((s,r)=>s+ +r.amount,0))}</div>
-        <input style={{...S.inp,width:240}} placeholder="Search product, customer, branch, payment…" value={searchSale} onChange={e=>setSearchSale(e.target.value)}/>
-      </div>
-      <Grid cols={["Product","Customer","Qty","Unit Price","Total","Pay","Branch","Date"]} rows={fsSales.map(s=>[s.productName,s.customer||"Walk-in",s.qty,<span style={{color:"#374151"}}>{fmt(s.unitPrice)}</span>,<strong style={{color:T.primary}}>{fmt(s.amount)}</strong>,<Tag bg={T.mid} tc={T.primary}>{s.payType||"Cash"}</Tag>,<Tag>{s.branch}</Tag>,s.date])}/>
-    </div>}
-    {activeSearch==="expenses"&&<div style={card}>
-      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
-        <div style={{fontWeight:800,color:"#ef4444",fontSize:13,textTransform:"uppercase",letterSpacing:.5,flex:1}}>Expenses ({fsExp.length}) · {fmt(fsExp.reduce((s,r)=>s+ +r.amount,0))}</div>
-        <input style={{...S.inp,width:240}} placeholder="Search description, category, branch…" value={searchExp} onChange={e=>setSearchExp(e.target.value)}/>
-      </div>
-      <Grid cols={["Description","Category","Amount","Branch","Date"]} rows={fsExp.map(e=>[e.desc,<Tag bg="#fef2f2" tc="#ef4444">{e.category}</Tag>,<strong style={{color:"#ef4444"}}>{fmt(e.amount)}</strong>,<Tag>{e.branch}</Tag>,e.date])}/>
-    </div>}
   </div>;
 }
 
@@ -645,3 +508,136 @@ function UsersPage({users,branches,T,S,Btn,Tag,FL,FG,FC,TH,Grid,Modal,onAdd,onTo
       rows={users.map(u=>[<strong style={{color:u.active?T.dark:"#94a3b8"}}>{u.name}</strong>,<span style={{fontSize:12,color:"#374151"}}>{u.email}</span>,<Tag bg={RC[u.role]+"20"} tc={RC[u.role]}>{u.role}</Tag>,u.branch?<Tag>{u.branch}</Tag>:<span style={{color:"#a78bfa",fontSize:12}}>All Branches</span>,<code style={{background:T.mid,padding:"2px 8px",borderRadius:4,color:T.primary,fontSize:12}}>{u.pin}</code>,<Tag bg={u.active?T.mid:"#fef2f2"} tc={u.active?T.primary:"#ef4444"}>{u.active?"Active":"Disabled"}</Tag>,<div style={{display:"flex",gap:6}}>{u.role!=="owner"&&<button onClick={()=>onToggle(u.id)} style={{...S.pay,background:u.active?"#fef2f2":T.mid,color:u.active?"#ef4444":T.primary,border:`1px solid ${u.active?"#fca5a5":T.border}`}}><Ic name={u.active?"disable":"enable"} size={12}/>{u.active?"Disable":"Enable"}</button>}<button onClick={()=>{setPm(u);setNp("");}} style={S.pay}><Ic name="pin" size={12}/> PIN</button></div>])}/>
   </div>;
 }
+
+function fmtPhone(raw){
+  const digits=(raw||"").replace(/\D/g,"");
+  if(digits.startsWith("234"))return digits;
+  if(digits.startsWith("0"))return"234"+digits.slice(1);
+  if(digits.length===10)return"234"+digits;
+  return digits;
+}
+
+function ReportsPage({sales,expenses,credits,branches,client,ab,isOwner,P,user,myBranch,myBranches,T,S,Btn,Tag,TH,Grid,KV}){
+  const[period,setPeriod]=useState("today");
+  const[branch,setBranch]=useState(isOwner?(ab||"all"):(myBranch||"all"));
+  const[showWA,setShowWA]=useState(null);
+  const[waData,setWaData]=useState({customer:"",phone:"",amount:"",item:""});
+  const[searchSale,setSearchSale]=useState("");
+  const[searchExp,setSearchExp]=useState("");
+  const[customFrom,setCustomFrom]=useState("");
+  const[customTo,setCustomTo]=useState("");
+  const[activeSearch,setActiveSearch]=useState("sales");
+  const fmt=n=>"₦"+Number(n||0).toLocaleString("en-NG");
+  const now=new Date();
+  const inPeriod=dateStr=>{
+    if(!dateStr)return false;
+    const d=new Date(dateStr);
+    if(period==="today")return d.toDateString()===now.toDateString();
+    if(period==="week"){const w=new Date(now);w.setDate(now.getDate()-7);return d>=w;}
+    if(period==="month")return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(period==="year")return d.getFullYear()===now.getFullYear();
+    if(period==="custom"&&customFrom&&customTo){const f=new Date(customFrom),t=new Date(customTo);t.setHours(23,59,59);return d>=f&&d<=t;}
+    return true;
+  };
+  const myBr=isOwner?branch:(myBranch||"all");
+  const fBr=arr=>myBr==="all"?arr:arr.filter(r=>r.branch===myBr);
+  const fS=fBr(sales).filter(s=>inPeriod(s.date));
+  const fE=fBr(expenses).filter(e=>inPeriod(e.date));
+  const fC=fBr(credits);
+  const tS=fS.reduce((s,r)=>s+ +r.amount,0);
+  const tE=fE.reduce((s,r)=>s+ +r.amount,0);
+  const tC=fC.reduce((s,r)=>s+(+r.amount-+(r.paid||0)),0);
+  const overdue=fC.filter(c=>(+c.amount-+(c.paid||0))>0&&c.status==="Overdue");
+  const fsSales=fS.filter(s=>!searchSale||s.productName?.toLowerCase().includes(searchSale.toLowerCase())||s.customer?.toLowerCase().includes(searchSale.toLowerCase())||s.branch?.toLowerCase().includes(searchSale.toLowerCase())||s.payType?.toLowerCase().includes(searchSale.toLowerCase()));
+  const fsExp=fE.filter(e=>!searchExp||e.desc?.toLowerCase().includes(searchExp.toLowerCase())||e.category?.toLowerCase().includes(searchExp.toLowerCase())||e.branch?.toLowerCase().includes(searchExp.toLowerCase()));
+  const prodT={};fS.forEach(s=>{if(!prodT[s.productName])prodT[s.productName]={qty:0,amount:0};prodT[s.productName].qty+= +s.qty;prodT[s.productName].amount+= +s.amount;});
+  const topProds=Object.entries(prodT).sort((a,b)=>b[1].amount-a[1].amount).slice(0,5);
+  const catT={};fE.forEach(e=>{catT[e.category]=(catT[e.category]||0)+ +e.amount;});
+  const pLabel=period==="today"?"Today":period==="week"?"This Week":period==="month"?"This Month":period==="year"?"This Year":period==="custom"&&customFrom&&customTo?customFrom+" to "+customTo:"All Time";
+  const exportCSV=type=>{
+    let rows,headers;
+    if(type==="sales"){headers=["Product","Customer","Qty","Unit Price","Amount","Payment","Branch","Date"];rows=fS.map(s=>[s.productName,s.customer||"Walk-in",s.qty,s.unitPrice,s.amount,s.payType||"Cash",s.branch,s.date]);}
+    else{headers=["Description","Category","Amount","Branch","Date"];rows=fE.map(e=>[e.desc,e.category,e.amount,e.branch,e.date]);}
+    const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download=`tracka_${type}_${pLabel.replace(/ /g,"_")}.csv`;a.click();URL.revokeObjectURL(url);
+  };
+  const doPrint=()=>{
+    const fmt2=n=>"₦"+Number(n||0).toLocaleString("en-NG");
+    const html=`<html><head><title>${client.name} — ${pLabel}</title><style>body{font-family:sans-serif;padding:20px;font-size:13px}h1{font-size:18px}h2{font-size:13px;color:#555;margin:16px 0 6px;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f5f5f5;text-align:left;padding:7px 10px;font-size:11px;border:1px solid #ddd}td{padding:7px 10px;border:1px solid #ddd}.g{color:#16a34a;font-weight:700}.r{color:#dc2626;font-weight:700}.o{color:#f59e0b;font-weight:700}</style></head><body><h1>${client.name}</h1><p style="color:#555;font-size:12px">${client.address} · ${client.phone}<br/>Period: ${pLabel} · Branch: ${myBr==="all"?"All Branches":myBr}<br/>Printed: ${new Date().toLocaleString("en-NG")}</p><hr/><table><thead><tr><th>Summary</th><th>Sales</th><th>Expenses</th><th>Profit</th><th>Credit</th></tr></thead><tbody><tr><td>Totals</td><td class="g">${fmt2(tS)}</td><td class="r">${fmt2(tE)}</td><td class="${tS-tE>=0?"g":"r"}">${fmt2(tS-tE)}</td><td class="o">${fmt2(tC)}</td></tr></tbody></table>${topProds.length>0?`<h2>Top Products</h2><table><thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead><tbody>${topProds.map(([n,d])=>`<tr><td>${n}</td><td>${d.qty}</td><td class="g">${fmt2(d.amount)}</td></tr>`).join("")}</tbody></table>`:""}${Object.keys(catT).length>0?`<h2>Expenses by Category</h2><table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>${Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([c,a])=>`<tr><td>${c}</td><td class="r">${fmt2(a)}</td></tr>`).join("")}</tbody></table>`:""}${isOwner&&myBr==="all"&&branches.length>1?`<h2>Branch Performance</h2><table><thead><tr><th>Branch</th><th>Sales</th><th>Expenses</th><th>Profit</th></tr></thead><tbody>${branches.map(b=>{const bS=sales.filter(s=>s.branch===b&&inPeriod(s.date)).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b&&inPeriod(e.date)).reduce((t,r)=>t+ +r.amount,0);return`<tr><td>📍 ${b}</td><td class="g">${fmt2(bS)}</td><td class="r">${fmt2(bE)}</td><td class="${bS-bE>=0?"g":"r"}">${fmt2(bS-bE)}</td></tr>`;}).join("")}</tbody></table>`:""}<h2>Sales (${fS.length})</h2><table><thead><tr><th>Product</th><th>Customer</th><th>Qty</th><th>Total</th><th>Pay</th><th>Branch</th><th>Date</th></tr></thead><tbody>${fS.map(s=>`<tr><td>${s.productName}</td><td>${s.customer||"Walk-in"}</td><td>${s.qty}</td><td class="g">${fmt2(s.amount)}</td><td>${s.payType||"Cash"}</td><td>${s.branch}</td><td>${s.date}</td></tr>`).join("")}</tbody></table><h2>Expenses (${fE.length})</h2><table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Branch</th><th>Date</th></tr></thead><tbody>${fE.map(e=>`<tr><td>${e.desc}</td><td>${e.category}</td><td class="r">${fmt2(e.amount)}</td><td>${e.branch}</td><td>${e.date}</td></tr>`).join("")}</tbody></table></body></html>`;
+    const w=window.open("","_blank");w.document.write(html);w.document.close();w.print();
+  };
+  const waReceipt=()=>{const msg=`🧾 *PAYMENT RECEIPT*\n━━━━━━━━━━━━━━━━━━━\n🏢 *${client.name}*\n📍 ${client.address}\n\n👤 Customer: *${waData.customer}*\n🛍 Item: ${waData.item}\n💰 Amount Paid: *${fmt(+waData.amount)}*\n📅 Date: ${new Date().toLocaleDateString("en-NG",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}\n\n✅ *Payment received. Thank you!*\n\n📞 ${client.phone}\n_Powered by Tracka_`;return`https://wa.me/${fmtPhone(waData.phone)}?text=${encodeURIComponent(msg)}`;};
+  const waThankYou=()=>{const msg=`🙏 *THANK YOU!*\n━━━━━━━━━━━━━━━━━━━\nDear *${waData.customer}*,\n\nThank you for your patronage at *${client.name}*!\n\nWe appreciate your business and look forward to serving you again.\n\n📞 ${client.phone}\n🌟 Your satisfaction is our priority!\n_${client.name}_`;return`https://wa.me/${fmtPhone(waData.phone)}?text=${encodeURIComponent(msg)}`;};
+  const waReminder=cr=>{const bal=+cr.amount-+(cr.paid||0);const msg=`⚠️ *PAYMENT REMINDER*\n━━━━━━━━━━━━━━━━━━━\nDear *${cr.customer}*,\n\nFriendly reminder from *${client.name}*.\n\n💳 Outstanding Balance: *${fmt(bal)}*\n📅 Due Date: ${cr.due}\n📊 Status: ${cr.status}\n\nKindly arrange payment at your earliest convenience.\n\nThank you!\n📞 ${client.phone}\n_${client.name}_`;return`https://wa.me/${fmtPhone(cr.phone)}?text=${encodeURIComponent(msg)}`;};
+  const ps=a=>({background:a?T.primary:T.light,color:a?"#fff":T.primary,border:`1px solid ${T.border}`,borderRadius:99,padding:"6px 14px",fontSize:12,cursor:"pointer",fontWeight:700});
+  const card={background:"#fff",border:`1px solid ${T.border}`,borderRadius:11,padding:16,marginBottom:16};
+  return<div>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
+      <div><div style={{fontWeight:800,fontSize:18,color:T.dark}}>Reports & Tools</div><div style={{fontSize:13,color:"#374151",fontWeight:700}}>{pLabel} · {myBr==="all"?"All Branches":myBr}</div></div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button onClick={()=>exportCSV("sales")} style={{...S.gBtn,fontSize:12,padding:"7px 12px"}}>⬇ CSV Sales</button>
+        <button onClick={()=>exportCSV("expenses")} style={{...S.gBtn,fontSize:12,padding:"7px 12px"}}>⬇ CSV Expenses</button>
+        <button onClick={doPrint} style={{...S.btn,fontSize:12,padding:"7px 12px"}}>🖨 Print Report</button>
+      </div>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+      <span style={{fontSize:12,color:"#374151",fontWeight:700}}>Period:</span>
+      {[["today","Today"],["week","This Week"],["month","This Month"],["year","This Year"],["all","All Time"],["custom","Custom"]].map(([v,l])=><button key={v} onClick={()=>setPeriod(v)} style={ps(period===v)}>{l}</button>)}
+    </div>
+    {period==="custom"&&<div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+      <div><label style={S.lbl}>From</label><input style={{...S.inp,width:160}} type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}/></div>
+      <div><label style={S.lbl}>To</label><input style={{...S.inp,width:160}} type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}/></div>
+    </div>}
+    {isOwner&&<div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
+      <span style={{fontSize:12,color:"#374151",fontWeight:700}}>Branch:</span>
+      <select style={{...S.inp,width:"auto",padding:"6px 10px"}} value={branch} onChange={e=>setBranch(e.target.value)}>
+        <option value="all">All Branches</option>{branches.map(b=><option key={b} value={b}>{b}</option>)}
+      </select>
+    </div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12,marginBottom:18}}>
+      {[{label:"Total Sales",value:fmt(tS),color:T.primary},{label:"Total Expenses",value:fmt(tE),color:"#ef4444"},{label:"Net Profit",value:fmt(tS-tE),color:tS-tE>=0?T.primary:"#ef4444"},{label:"Credit Owed",value:fmt(tC),color:"#f59e0b"}].map(k=><div key={k.label} style={{background:"#fff",border:`1px solid ${T.border}`,borderRadius:11,padding:16,borderLeft:`4px solid ${k.color}`}}><div style={{fontSize:11,color:"#374151",marginBottom:4}}>{k.label}</div><div style={{fontSize:18,fontWeight:800,color:k.color}}>{k.value}</div></div>)}
+    </div>
+    {topProds.length>0&&<div style={card}><div style={{fontWeight:800,color:T.primary,fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>🏆 Top Selling Products</div><Grid cols={["Product","Qty Sold","Revenue"]} rows={topProds.map(([n,d])=>[<strong style={{color:T.dark}}>{n}</strong>,d.qty,<strong style={{color:T.primary}}>{fmt(d.amount)}</strong>])}/></div>}
+    {Object.keys(catT).length>0&&<div style={card}><div style={{fontWeight:800,color:"#ef4444",fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>💸 Expenses by Category</div><Grid cols={["Category","Amount"]} rows={Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>[cat,<strong style={{color:"#ef4444"}}>{fmt(amt)}</strong>])}/></div>}
+    {isOwner&&myBr==="all"&&branches.length>1&&<div style={card}><div style={{fontWeight:800,color:T.primary,fontSize:13,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>📍 Branch Performance</div><Grid cols={["Branch","Sales","Expenses","Profit"]} rows={branches.map(b=>{const bS=sales.filter(s=>s.branch===b&&inPeriod(s.date)).reduce((t,r)=>t+ +r.amount,0);const bE=expenses.filter(e=>e.branch===b&&inPeriod(e.date)).reduce((t,r)=>t+ +r.amount,0);return[<strong style={{color:T.dark}}>📍 {b}</strong>,<span style={{color:T.primary}}>{fmt(bS)}</span>,<span style={{color:"#ef4444"}}>{fmt(bE)}</span>,<strong style={{color:bS-bE>=0?T.primary:"#ef4444"}}>{fmt(bS-bE)}</strong>];})}/></div>}
+    <div style={{...card,border:"1px solid #25d36640"}}>
+      <div style={{fontWeight:800,color:"#25d366",fontSize:14,marginBottom:16}}>📱 WhatsApp Tools</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:16}}>
+        {[{key:"receipt",label:"🧾 Send Receipt",color:"#16a34a",desc:"Send payment receipt to customer"},{key:"thankyou",label:"🙏 Thank You Message",color:"#0369a1",desc:"Appreciate a customer after purchase"}].map(btn=><button key={btn.key} onClick={()=>{setShowWA(btn.key);setWaData({customer:"",phone:"",amount:"",item:""}); }} style={{background:btn.color+"15",border:`1px solid ${btn.color}40`,borderRadius:10,padding:14,cursor:"pointer",textAlign:"left"}}><div style={{fontWeight:800,color:btn.color,marginBottom:4}}>{btn.label}</div><div style={{fontSize:11,color:"#374151"}}>{btn.desc}</div></button>)}
+      </div>
+      {(showWA==="receipt"||showWA==="thankyou")&&<div style={{background:T.light,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:16}}>
+        <div style={{fontWeight:700,color:T.primary,marginBottom:12,fontSize:12,textTransform:"uppercase"}}>{showWA==="receipt"?"🧾 Generate Receipt":"🙏 Generate Thank You"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:12}}>
+          <div><label style={S.lbl}>Customer Name *</label><input style={S.inp} placeholder="e.g. Mama Ngozi" value={waData.customer} onChange={e=>setWaData(p=>({...p,customer:e.target.value}))}/></div>
+          <div><label style={S.lbl}>Phone * (e.g. 08012345678)</label><input style={S.inp} placeholder="08012345678" value={waData.phone} onChange={e=>setWaData(p=>({...p,phone:e.target.value}))}/></div>
+          {showWA==="receipt"&&<><div><label style={S.lbl}>Item / Service</label><input style={S.inp} placeholder="e.g. 2 Jeans Trousers" value={waData.item} onChange={e=>setWaData(p=>({...p,item:e.target.value}))}/></div><div><label style={S.lbl}>Amount Paid (₦)</label><input style={S.inp} type="number" value={waData.amount} onChange={e=>setWaData(p=>({...p,amount:e.target.value}))}/></div></>}
+        </div>
+        <div style={{display:"flex",gap:10,marginTop:14}}>
+          <button onClick={()=>setShowWA(null)} style={{...S.canc,flex:"none",padding:"9px 16px"}}>Cancel</button>
+          <a href={showWA==="receipt"?waReceipt():waThankYou()} target="_blank" rel="noreferrer" style={{flex:1,background:"#25d366",border:"none",borderRadius:7,color:"#fff",padding:"10px",fontWeight:800,fontSize:14,cursor:"pointer",textAlign:"center",textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Ic name="wa" size={18}/> Open WhatsApp & Send</a>
+        </div>
+      </div>}
+      {overdue.length>0&&<div><div style={{fontWeight:800,color:"#ef4444",fontSize:13,marginBottom:12}}>⚠️ Overdue Credit Reminders</div><div style={{display:"flex",flexDirection:"column",gap:8}}>{overdue.map(cr=>{const bal=+cr.amount-+(cr.paid||0);return<div key={cr.id} style={{background:"#fff",border:"1px solid #fca5a5",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}><div><div style={{fontWeight:700,color:"#7f1d1d"}}>{cr.customer}</div><div style={{fontSize:12,color:"#374151"}}>{cr.phone} · {cr.branch} · Due: {cr.due}</div><div style={{fontSize:13,fontWeight:700,color:"#ef4444"}}>Balance: {fmt(bal)}</div></div><a href={waReminder(cr)} target="_blank" rel="noreferrer" style={{background:"#25d366",border:"none",borderRadius:8,color:"#fff",padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",textDecoration:"none",display:"flex",alignItems:"center",gap:6}}><Ic name="wa" size={16}/> Send Reminder</a></div>;})}</div></div>}
+      {overdue.length===0&&<div style={{fontSize:13,color:"#16a34a",fontWeight:600,padding:"8px 0"}}>✅ No overdue credits — all clear!</div>}
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:14}}>
+      <button onClick={()=>setActiveSearch("sales")} style={ps(activeSearch==="sales")}>🔍 Search Sales</button>
+      <button onClick={()=>setActiveSearch("expenses")} style={ps(activeSearch==="expenses")}>🔍 Search Expenses</button>
+    </div>
+    {activeSearch==="sales"&&<div style={card}>
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{fontWeight:800,color:T.primary,fontSize:13,textTransform:"uppercase",letterSpacing:.5,flex:1}}>Sales ({fsSales.length}) · {fmt(fsSales.reduce((s,r)=>s+ +r.amount,0))}</div>
+        <input style={{...S.inp,width:220}} placeholder="Search product, customer, branch…" value={searchSale} onChange={e=>setSearchSale(e.target.value)}/>
+      </div>
+      <Grid cols={["Product","Customer","Qty","Unit Price","Total","Pay","Branch","Date"]} rows={fsSales.map(s=>[s.productName,s.customer||"Walk-in",s.qty,<span style={{color:"#374151"}}>{fmt(s.unitPrice)}</span>,<strong style={{color:T.primary}}>{fmt(s.amount)}</strong>,<Tag bg={T.mid} tc={T.primary}>{s.payType||"Cash"}</Tag>,<Tag>{s.branch}</Tag>,s.date])}/>
+    </div>}
+    {activeSearch==="expenses"&&<div style={card}>
+      <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{fontWeight:800,color:"#ef4444",fontSize:13,textTransform:"uppercase",letterSpacing:.5,flex:1}}>Expenses ({fsExp.length}) · {fmt(fsExp.reduce((s,r)=>s+ +r.amount,0))}</div>
+        <input style={{...S.inp,width:220}} placeholder="Search description, category, branch…" value={searchExp} onChange={e=>setSearchExp(e.target.value)}/>
+      </div>
+      <Grid cols={["Description","Category","Amount","Branch","Date"]} rows={fsExp.map(e=>[e.desc,<Tag bg="#fef2f2" tc="#ef4444">{e.category}</Tag>,<strong style={{color:"#ef4444"}}>{fmt(e.amount)}</strong>,<Tag>{e.branch}</Tag>,e.date])}/>
+    </div>}
+  </div>;
+    }
