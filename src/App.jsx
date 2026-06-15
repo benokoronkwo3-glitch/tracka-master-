@@ -111,11 +111,11 @@ export default function App(){
     const p=new URLSearchParams(window.location.search);
     const fromUrl=p.get("client");
     if(fromUrl&&CLIENTS[fromUrl]){
-      sessionStorage.setItem("tracka_client",fromUrl);
+      localStorage.setItem("tracka_client",fromUrl);
       window.history.replaceState({},"",window.location.pathname);
       return fromUrl;
     }
-    return sessionStorage.getItem("tracka_client");
+    return localStorage.getItem("tracka_client");
   };
   const cid=getClient();
   const cl=CLIENTS[cid];
