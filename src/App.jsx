@@ -189,7 +189,8 @@ function LoginScreen({client,onLogin}){
         <div style={{textAlign:"center",fontWeight:900,fontSize:13,color:T.primary,marginBottom:2}}>TRACKA</div>
         <div style={{textAlign:"center",fontWeight:800,fontSize:18,color:T.dark,marginBottom:4}}>{client.name}</div>
         <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:4}}>{client.address}</div>
-        <div style={{textAlign:"center",fontSize:12,color:"#64748b",marginBottom:20}}>{client.state}</div>
+       <div style={{ textAlign:"center", fontSize:12, color:"#64748b", marginBottom:4 }}>{client.state}</div>
+        {client.motto && <div style={{ textAlign:"center", fontSize:12, color:T.primary, fontStyle:"italic", fontWeight:600, marginBottom:20 }}>"{client.motto}"</div>}
         <div style={{height:1,background:T.border,marginBottom:20}}/>
         {dbOk===false&&<div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:8,padding:14,marginBottom:16,color:"#dc2626",fontSize:13}}><strong>⚠ Cannot connect to database</strong>{dbErr&&<div style={{fontSize:11,marginTop:4,opacity:.8,wordBreak:"break-all"}}>{dbErr}</div>}</div>}
         <label style={lbl}>Email Address</label>
