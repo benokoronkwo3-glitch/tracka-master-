@@ -51,11 +51,12 @@ const CLIENTS = {
   },
 surplus_plus: {
     id:       "surplus_plus",
-    name:     "Surplus Plus",
+    name:     "Surplus Plus Global Ltd",
+    motto:    "God is the Surplus you need",
     address:  "J Line Shop 60, Building Materials Int'l Market, Ogidi, Anambra State",
     state:    "Anambra State",
     owner:    "Bar. Uche Esiobu",
-    phone:    "08033391064",
+    phone:    "08033391064 · 08037832232 · 07081167300",
     logo:     "SP",
     branches: ["Head Office - J Line","Branch - Z1/24 Z Line"],
     expCats:  ["Rent","Utilities","Staff Salary","Stock Purchase","Logistics","Transport","Packaging","Miscellaneous"],
@@ -69,6 +70,7 @@ surplus_plus: {
       logo:    "linear-gradient(135deg,#0369a1,#38bdf8)",
     },
   },
+      
   // ADD NEW CLIENT HERE
 };
 
