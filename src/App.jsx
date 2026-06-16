@@ -49,7 +49,26 @@ const CLIENTS = {
     expCats:["Rent","Utilities","Staff Salary","Stock Purchase","Logistics","Transport","Packaging","Miscellaneous"],
     theme:{primary:"#b45309",dark:"#78350f",light:"#fffbeb",mid:"#fef3c7",border:"#fde68a",login:"linear-gradient(135deg,#78350f,#b45309,#fbbf24)",logo:"linear-gradient(135deg,#b45309,#fbbf24)"},
   },
-
+surplus_plus: {
+    id:       "surplus_plus",
+    name:     "Surplus Plus",
+    address:  "J Line Shop 60, Building Materials Int'l Market, Ogidi, Anambra State",
+    state:    "Anambra State",
+    owner:    "Bar. Uche Esiobu",
+    phone:    "08033391064",
+    logo:     "SP",
+    branches: ["Head Office - J Line","Branch - Z1/24 Z Line"],
+    expCats:  ["Rent","Utilities","Staff Salary","Stock Purchase","Logistics","Transport","Packaging","Miscellaneous"],
+    theme: {
+      primary: "#0369a1",
+      dark:    "#0c4a6e",
+      light:   "#f0f9ff",
+      mid:     "#e0f2fe",
+      border:  "#bae6fd",
+      login:   "linear-gradient(135deg,#0c4a6e,#0369a1,#38bdf8)",
+      logo:    "linear-gradient(135deg,#0369a1,#38bdf8)",
+    },
+  },
   // ADD NEW CLIENT HERE
 };
 
