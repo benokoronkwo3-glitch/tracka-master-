@@ -2,7 +2,36 @@ import { useState, useEffect, useCallback } from "react";
 
 const SB_URL = "https://saxtkbtmszkqstdoamvv.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNheHRrYnRtc3prcXN0ZG9hbXZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDU0MzAsImV4cCI6MjA5NjYyMTQzMH0.uXpzhMg_QJR1Ewj5OfFlAwStDrP0gvolCqBrDE1mIqE";
-
+grace_of_god: {
+    id:          "grace_of_god",
+    name:        "Grace of God Mission International",
+    denomination:"His Glory Cathedral",
+    address:     "33 Trans Nkisi, GRA Onitsha, Anambra State",
+    state:       "Anambra State",
+    pastor:      "Bishop Dr Paul Nwachukwu",
+    phone:       "08033210572",
+    logo:        "GGM",
+    branches:    [
+      "HQ — Trans Nkisi GRA",
+      "His Glory Parish — Niger Drive GRA",
+      "His Glory Parish — Stock Exchange GRA",
+      "GGM — Owerri Rd Enugu",
+      "GGM — New Market Rd Onitsha",
+      "GGM — Fegge",
+      "GGM — Awada",
+      "GGM — Nnewi",
+      "GGM — Nkpor",
+    ],
+    theme: {
+      primary: "#ea580c",
+      dark:    "#7c2d12",
+      light:   "#fff7ed",
+      mid:     "#ffedd5",
+      border:  "#fed7aa",
+      login:   "linear-gradient(135deg,#7c2d12,#ea580c,#fbbf24)",
+      logo:    "linear-gradient(135deg,#ea580c,#fbbf24)",
+    },
+  },
 const CHURCHES = {
   // ADD CHURCH HERE — copy block, change details
   // example_church: {
