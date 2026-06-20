@@ -1,0 +1,5 @@
+{
+  "buildCommand": "vite build --config vite.church.config.js",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
