@@ -3,11 +3,14 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import ChurchApp from './ChurchApp.jsx'
 
-const mode = localStorage.getItem('tracka_mode');
-const AppToLoad = mode === 'church' ? ChurchApp : App;
+const p = new URLSearchParams(window.location.search);
+const churchId = p.get('church');
+const stored = localStorage.getItem('tracka_church_client');
+
+const isChurch = !!(churchId || stored);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppToLoad/>
+    {isChurch ? <ChurchApp/> : <App/>}
   </React.StrictMode>
 )
