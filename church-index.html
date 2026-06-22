@@ -4,13 +4,14 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Tracka Church</title>
-    <meta name="mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-title" content="Tracka Church"/>
-    <meta name="theme-color" content="#7c3aed"/>
+    <meta name="theme-color" content="#ea580c"/>
+    <script>
+      // Store church mode before React loads
+      localStorage.setItem('tracka_mode', 'church');
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/ChurchMain.jsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
