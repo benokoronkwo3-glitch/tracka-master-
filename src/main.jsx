@@ -6,7 +6,6 @@ import ChurchApp from './ChurchApp.jsx'
 const p = new URLSearchParams(window.location.search);
 const churchId = p.get('church');
 const stored = localStorage.getItem('tracka_church_client');
-
 const isChurch = !!(churchId || stored);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
