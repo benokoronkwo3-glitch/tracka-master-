@@ -1,21 +1,33 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 
-const p = new URLSearchParams(window.location.search)
-const schoolId = p.get('school')
-const storedSchool = localStorage.getItem('tracka_school_client')
+function Root() {
+  const p = new URLSearchParams(window.location.search)
+  const schoolId = p.get('school')
+  const storedSchool = localStorage.getItem('tracka_school_client')
+  const clientId = p.get('client')
+  const storedClient = localStorage.getItem('tracka_client')
 
-let AppToRender = App
-
-if (schoolId || storedSchool) {
   if (schoolId) localStorage.setItem('tracka_school_client', schoolId)
-  const { default: SchoolApp } = await import('./SchoolApp.jsx')
-  AppToRender = SchoolApp
+  if (clientId) localStorage.setItem('tracka_client', clientId)
+
+  const isSchool = !!(schoolId || storedSchool)
+
+  if (isSchool) {
+    const SchoolApp = React.lazy(() => import('./SchoolApp.jsx'))
+    return (
+      <React.Suspense fallback={<div style={{minHeight:'100vh',background:'#78350f'}}/>}>
+        <SchoolApp />
+      </React.Suspense>
+    )
+  }
+
+  return <App />
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppToRender />
+    <Root />
   </React.StrictMode>
 )
