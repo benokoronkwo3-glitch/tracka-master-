@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 
 const p = new URLSearchParams(window.location.search)
@@ -6,7 +6,6 @@ const schoolId = p.get('school')
 const clientId = p.get('client')
 const churchId = p.get('church')
 
-// Clear conflicting stored values when a specific param is in URL
 if (schoolId) {
   localStorage.removeItem('tracka_client')
   localStorage.removeItem('tracka_church_client')
@@ -23,28 +22,19 @@ if (churchId) {
   localStorage.setItem('tracka_church_client', churchId)
 }
 
-const storedSchool  = localStorage.getItem('tracka_school_client')
-const storedChurch  = localStorage.getItem('tracka_church_client')
+const isSchool = !!localStorage.getItem('tracka_school_client')
+const isChurch = !!localStorage.getItem('tracka_church_client')
 
-async function init() {
-  let Component
+const SchoolApp = lazy(() => import('./SchoolApp.jsx'))
+const ChurchApp = lazy(() => import('./ChurchApp.jsx'))
+const App       = lazy(() => import('./App.jsx'))
 
-  if (storedSchool) {
-    const mod = await import('./SchoolApp.jsx')
-    Component = mod.default
-  } else if (storedChurch) {
-    const mod = await import('./ChurchApp.jsx')
-    Component = mod.default
-  } else {
-    const mod = await import('./App.jsx')
-    Component = mod.default
-  }
+const ActiveApp = isSchool ? SchoolApp : isChurch ? ChurchApp : App
 
-  ReactDOM.createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
-      <Component />
-    </React.StrictMode>
-  )
-}
-
-init()
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <Suspense fallback={<div style={{minHeight:'100vh',background:'#0f172a'}}/>}>
+      <ActiveApp />
+    </Suspense>
+  </React.StrictMode>
+)
